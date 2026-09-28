@@ -2,697 +2,809 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-
-<title>Hand Energy Tracking</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Energy Hand Tracking</title>
 
 <style>
 *{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    -webkit-tap-highlight-color:transparent;
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
 }
 
 html,body{
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    background:#000;
-    font-family:Arial,sans-serif;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#02040a;
+  font-family:Arial,Helvetica,sans-serif;
+  color:white;
 }
 
+#app{
+  position:relative;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 50%,#10233b 0%,#040811 38%,#010207 80%);
+}
+
+/* CAMERA */
 #camera{
-    position:fixed;
-    inset:0;
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    transform:scaleX(-1);
-    background:#000;
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  transform:scaleX(-1);
+  opacity:.88;
+  filter:contrast(1.08) brightness(.78) saturate(1.15);
 }
 
-#canvas{
-    position:fixed;
-    inset:0;
-    width:100%;
-    height:100%;
-    pointer-events:none;
+/* CANVAS */
+#fx{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
 }
 
-.ui{
-    position:fixed;
-    top:18px;
-    left:50%;
-    transform:translateX(-50%);
-    z-index:20;
-    width:calc(100% - 36px);
-    max-width:430px;
-    padding:15px 18px;
-    color:white;
-    text-align:center;
-    border:1px solid rgba(255,255,255,.18);
-    border-radius:18px;
-    background:rgba(0,0,0,.45);
-    backdrop-filter:blur(18px);
-    -webkit-backdrop-filter:blur(18px);
-    box-shadow:0 0 30px rgba(0,180,255,.18);
+/* OVERLAY */
+.overlay{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at center,transparent 35%,rgba(0,0,0,.55) 100%);
 }
 
-.ui h1{
-    font-size:16px;
+/* TOP UI */
+.top{
+  position:absolute;
+  top:20px;
+  left:20px;
+  right:20px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  z-index:10;
+}
+
+.logo{
+  font-size:14px;
+  letter-spacing:4px;
+  font-weight:800;
+}
+
+.status{
+  padding:8px 14px;
+  border:1px solid rgba(0,255,255,.35);
+  border-radius:30px;
+  background:rgba(0,20,30,.55);
+  backdrop-filter:blur(12px);
+  color:#62ffff;
+  font-size:11px;
+  letter-spacing:2px;
+}
+
+/* CENTER */
+.center{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;
+  z-index:5;
+  pointer-events:none;
+}
+
+.title{
+  font-size:clamp(30px,6vw,75px);
+  font-weight:900;
+  letter-spacing:8px;
+  text-shadow:
+    0 0 10px #00ffff,
+    0 0 30px rgba(0,255,255,.5);
+}
+
+.subtitle{
+  margin-top:10px;
+  color:#8ba7b8;
+  letter-spacing:5px;
+  font-size:11px;
+}
+
+/* BUTTON */
+.controls{
+  position:absolute;
+  bottom:30px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:20;
+}
+
+button{
+  border:1px solid rgba(0,255,255,.5);
+  background:rgba(0,15,25,.75);
+  color:#7fffff;
+  padding:14px 24px;
+  border-radius:40px;
+  font-weight:800;
+  letter-spacing:2px;
+  cursor:pointer;
+  backdrop-filter:blur(15px);
+  box-shadow:
+    0 0 20px rgba(0,255,255,.15),
+    inset 0 0 20px rgba(0,255,255,.05);
+  transition:.25s;
+}
+
+button:hover{
+  transform:scale(1.05);
+  box-shadow:
+    0 0 35px rgba(0,255,255,.5);
+}
+
+/* INFO */
+.info{
+  position:absolute;
+  left:20px;
+  bottom:25px;
+  z-index:10;
+  font-size:10px;
+  color:#65808e;
+  letter-spacing:2px;
+}
+
+/* LOADING */
+#loading{
+  position:absolute;
+  inset:0;
+  z-index:50;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  background:#02040a;
+  transition:.5s;
+}
+
+.loader{
+  width:45px;
+  height:45px;
+  border:2px solid rgba(0,255,255,.15);
+  border-top-color:#00ffff;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin-bottom:20px;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+.hidden{
+  opacity:0;
+  pointer-events:none;
+}
+
+/* MOBILE */
+@media(max-width:600px){
+
+  .top{
+    top:14px;
+    left:14px;
+    right:14px;
+  }
+
+  .logo{
+    font-size:10px;
     letter-spacing:3px;
-}
+  }
 
-#status{
-    margin-top:7px;
-    color:#6eeaff;
-    font-size:12px;
-}
+  .status{
+    font-size:9px;
+    padding:7px 10px;
+  }
 
-#start{
-    position:fixed;
-    left:50%;
-    bottom:35px;
-    transform:translateX(-50%);
-    z-index:30;
-    border:1px solid rgba(100,230,255,.6);
-    border-radius:50px;
-    padding:15px 28px;
-    color:white;
-    background:rgba(0,100,160,.35);
-    font-size:14px;
-    font-weight:bold;
-    letter-spacing:1px;
-    box-shadow:0 0 25px rgba(0,210,255,.35);
-    backdrop-filter:blur(12px);
-    -webkit-backdrop-filter:blur(12px);
-}
+  .title{
+    letter-spacing:5px;
+    font-size:31px;
+  }
 
-#start:active{
-    transform:translateX(-50%) scale(.95);
-}
+  .subtitle{
+    font-size:8px;
+    letter-spacing:3px;
+  }
 
-#error{
-    position:fixed;
-    left:18px;
-    right:18px;
-    bottom:105px;
-    z-index:25;
+  .controls{
+    bottom:25px;
+  }
+
+  button{
+    padding:13px 18px;
+    font-size:10px;
+  }
+
+  .info{
     display:none;
-    padding:14px;
-    color:#fff;
-    background:rgba(100,0,0,.7);
-    border:1px solid rgba(255,100,100,.4);
-    border-radius:14px;
-    font-size:12px;
-    line-height:1.5;
-    text-align:center;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<video id="camera" autoplay muted playsinline webkit-playsinline></video>
-<canvas id="canvas"></canvas>
+<div id="app">
 
-<div class="ui">
-    <h1>ENERGY TRACKING</h1>
-    <p id="status">READY</p>
+  <video id="camera" autoplay playsinline muted></video>
+
+  <canvas id="fx"></canvas>
+
+  <div class="overlay"></div>
+
+  <div class="top">
+    <div class="logo">ENERGY // TRACKING</div>
+    <div class="status" id="status">OFFLINE</div>
+  </div>
+
+  <div class="center">
+    <div class="title">ENERGY</div>
+    <div class="subtitle">HAND INTERACTION SYSTEM</div>
+  </div>
+
+  <div class="info">
+    CAMERA / HAND / ENERGY CORE
+  </div>
+
+  <div class="controls">
+    <button id="start">⚡ AKTIFKAN KAMERA</button>
+  </div>
+
+  <div id="loading">
+    <div class="loader"></div>
+    <div>MEMUAT SYSTEM...</div>
+  </div>
+
 </div>
-
-<div id="error"></div>
-
-<button id="start">⚡ AKTIFKAN KAMERA</button>
 
 <script type="module">
 
 import {
-    HandLandmarker,
-    FilesetResolver
-} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22";
+  HandLandmarker,
+  FilesetResolver
+} from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/+esm";
 
-const video=document.getElementById("camera");
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-const statusText=document.getElementById("status");
-const startButton=document.getElementById("start");
-const errorBox=document.getElementById("error");
+const video = document.getElementById("camera");
+const canvas = document.getElementById("fx");
+const ctx = canvas.getContext("2d");
 
-let handLandmarker=null;
-let lastVideoTime=-1;
-let running=false;
+const button = document.getElementById("start");
+const status = document.getElementById("status");
+const loading = document.getElementById("loading");
+
+let handLandmarker;
+let stream;
+let lastVideoTime = -1;
+
+let hands = [];
+
+let particles = [];
 
 function resize(){
 
-    canvas.width=window.innerWidth*devicePixelRatio;
-    canvas.height=window.innerHeight*devicePixelRatio;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 
-    canvas.style.width=window.innerWidth+"px";
-    canvas.style.height=window.innerHeight+"px";
-
-    ctx.setTransform(
-        devicePixelRatio,
-        0,
-        0,
-        devicePixelRatio,
-        0,
-        0
-    );
 }
 
-window.addEventListener("resize",resize);
 resize();
 
-function showError(message){
+window.addEventListener("resize",resize);
 
-    errorBox.style.display="block";
-    errorBox.textContent=message;
+
+/* PARTICLES */
+
+for(let i=0;i<250;i++){
+
+  particles.push({
+    x:Math.random(),
+    y:Math.random(),
+    vx:(Math.random()-.5)*.001,
+    vy:(Math.random()-.5)*.001,
+    size:Math.random()*2+0.5,
+    life:Math.random()
+  });
+
 }
+
+
+/* MEDIAPIPE */
 
 async function setup(){
 
-    try{
+  const vision = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm"
+  );
 
-        statusText.textContent="MEMUAT HAND TRACKING...";
+  handLandmarker = await HandLandmarker.createFromOptions(
+    vision,
+    {
+      baseOptions:{
+        modelAssetPath:
+        "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
+      },
 
-        const vision=
-            await FilesetResolver.forVisionTasks(
-                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm"
-            );
+      runningMode:"VIDEO",
 
-        handLandmarker=
-            await HandLandmarker.createFromOptions(
-                vision,
-                {
-                    baseOptions:{
-                        modelAssetPath:
-                        "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
-                    },
+      numHands:2,
 
-                    runningMode:"VIDEO",
-                    numHands:2,
+      minHandDetectionConfidence:.55,
 
-                    minHandDetectionConfidence:.55,
-                    minHandPresenceConfidence:.55,
-                    minTrackingConfidence:.55
-                }
-            );
+      minHandPresenceConfidence:.55,
 
-        statusText.textContent="HAND TRACKING SIAP";
-
-    }catch(error){
-
-        console.error(error);
-
-        statusText.textContent="GAGAL MEMUAT";
-
-        showError(
-            "MediaPipe gagal dimuat. Pastikan internet aktif."
-        );
+      minTrackingConfidence:.55
     }
+  );
+
+  loading.classList.add("hidden");
+
 }
 
-async function startCamera(){
+setup();
 
-    errorBox.style.display="none";
 
-    try{
+/* CAMERA */
 
-        if(
-            !navigator.mediaDevices ||
-            !navigator.mediaDevices.getUserMedia
-        ){
+button.addEventListener("click",async()=>{
 
-            throw new Error("CAMERA_API_NOT_SUPPORTED");
-        }
+  try{
 
-        statusText.textContent="MEMINTA IZIN KAMERA...";
+    stream = await navigator.mediaDevices.getUserMedia({
 
-        const stream=
-            await navigator.mediaDevices.getUserMedia({
+      video:{
+        facingMode:"user",
+        width:{ideal:1280},
+        height:{ideal:720}
+      },
 
-                video:{
-                    facingMode:{
-                        ideal:"user"
-                    },
+      audio:false
 
-                    width:{
-                        ideal:1280
-                    },
+    });
 
-                    height:{
-                        ideal:720
-                    }
-                },
+    video.srcObject=stream;
 
-                audio:false
-            });
+    await video.play();
 
-        video.srcObject=stream;
+    button.style.display="none";
 
-        await video.play();
+    status.textContent="SYSTEM ONLINE";
 
-        running=true;
+    status.style.color="#00ffff";
 
-        startButton.style.display="none";
+    animate();
 
-        statusText.textContent=
-            "KAMERA AKTIF • TUNJUKKAN TANGAN";
+  }catch(error){
 
-        requestAnimationFrame(loop);
+    console.error(error);
 
-    }catch(error){
+    status.textContent="CAMERA ERROR";
 
-        console.error(error);
+    alert(
+      "Kamera tidak bisa dibuka. Pastikan izin kamera sudah diberikan."
+    );
 
-        if(error.name==="NotAllowedError"){
-
-            statusText.textContent="IZIN KAMERA DITOLAK";
-
-            showError(
-                "Izinkan akses kamera untuk browser yang digunakan."
-            );
-
-        }else if(error.name==="NotFoundError"){
-
-            statusText.textContent="KAMERA TIDAK DITEMUKAN";
-
-            showError(
-                "iPhone tidak menemukan kamera."
-            );
-
-        }else if(error.name==="NotReadableError"){
-
-            statusText.textContent="KAMERA SEDANG DIPAKAI";
-
-            showError(
-                "Tutup aplikasi lain yang sedang menggunakan kamera."
-            );
-
-        }else{
-
-            statusText.textContent="KAMERA GAGAL";
-
-            showError(
-                "Preview Koder mungkin tidak mendukung kamera. Gunakan HTTPS."
-            );
-        }
-    }
-}
-
-startButton.addEventListener("click",async()=>{
-
-    if(!handLandmarker){
-        await setup();
-    }
-
-    await startCamera();
+  }
 
 });
 
-function point(p){
 
-    return{
-        x:(1-p.x)*window.innerWidth,
-        y:p.y*window.innerHeight
-    };
+/* LANDMARK */
+
+function point(hand,index){
+
+  const p=hand[index];
+
+  return {
+
+    x:(1-p.x)*canvas.width,
+
+    y:p.y*canvas.height
+
+  };
+
 }
 
-const connections=[
 
+/* DISTANCE */
+
+function distance(a,b){
+
+  return Math.sqrt(
+
+    Math.pow(a.x-b.x,2)+
+
+    Math.pow(a.y-b.y,2)
+
+  );
+
+}
+
+
+/* GLOW */
+
+function glowCircle(x,y,r){
+
+  const g=ctx.createRadialGradient(
+    x,y,0,
+    x,y,r
+  );
+
+  g.addColorStop(0,"rgba(255,255,255,.95)");
+
+  g.addColorStop(.08,"rgba(0,255,255,.9)");
+
+  g.addColorStop(.35,"rgba(0,150,255,.35)");
+
+  g.addColorStop(1,"rgba(0,0,0,0)");
+
+  ctx.fillStyle=g;
+
+  ctx.beginPath();
+
+  ctx.arc(x,y,r,0,Math.PI*2);
+
+  ctx.fill();
+
+}
+
+
+/* ENERGY BEAM */
+
+function beam(a,b){
+
+  const d=distance(a,b);
+
+  const gradient=ctx.createLinearGradient(
+    a.x,a.y,b.x,b.y
+  );
+
+  gradient.addColorStop(
+    0,
+    "rgba(0,255,255,0)"
+  );
+
+  gradient.addColorStop(
+    .5,
+    "rgba(0,255,255,.8)"
+  );
+
+  gradient.addColorStop(
+    1,
+    "rgba(0,100,255,0)"
+  );
+
+  ctx.strokeStyle=gradient;
+
+  ctx.lineWidth=Math.min(15,Math.max(2,d*.04));
+
+  ctx.shadowBlur=25;
+
+  ctx.shadowColor="#00ffff";
+
+  ctx.beginPath();
+
+  ctx.moveTo(a.x,a.y);
+
+  ctx.lineTo(b.x,b.y);
+
+  ctx.stroke();
+
+  ctx.shadowBlur=0;
+
+}
+
+
+/* HAND DRAW */
+
+function drawHand(hand){
+
+  const connections=[
     [0,1],[1,2],[2,3],[3,4],
-
     [0,5],[5,6],[6,7],[7,8],
+    [5,9],[9,10],[10,11],[11,12],
+    [9,13],[13,14],[14,15],[15,16],
+    [13,17],[17,18],[18,19],[19,20],
+    [0,17]
+  ];
 
-    [0,9],[9,10],[10,11],[11,12],
+  ctx.lineCap="round";
 
-    [0,13],[13,14],[14,15],[15,16],
+  for(const [a,b] of connections){
 
-    [0,17],[17,18],[18,19],[19,20],
+    const p1=point(hand,a);
 
-    [5,9],
-    [9,13],
-    [13,17]
-];
+    const p2=point(hand,b);
 
-function drawHand(points){
+    ctx.strokeStyle="rgba(0,255,255,.65)";
 
-    ctx.save();
+    ctx.lineWidth=2;
 
-    ctx.lineWidth=3;
+    ctx.shadowBlur=12;
 
-    ctx.shadowBlur=18;
-    ctx.shadowColor="#ff7b00";
+    ctx.shadowColor="#00ffff";
 
-    ctx.strokeStyle="#ff9d18";
+    ctx.beginPath();
 
-    for(const [a,b] of connections){
+    ctx.moveTo(p1.x,p1.y);
 
-        const p1=point(points[a]);
-        const p2=point(points[b]);
+    ctx.lineTo(p2.x,p2.y);
 
-        ctx.beginPath();
+    ctx.stroke();
 
-        ctx.moveTo(p1.x,p1.y);
-        ctx.lineTo(p2.x,p2.y);
+  }
 
-        ctx.stroke();
-    }
+  ctx.shadowBlur=0;
 
-    for(const p of points){
+  for(let i=0;i<21;i++){
 
-        const q=point(p);
+    const p=point(hand,i);
 
-        ctx.beginPath();
+    glowCircle(p.x,p.y,9);
 
-        ctx.shadowBlur=20;
-        ctx.shadowColor="#ffb000";
+  }
 
-        ctx.fillStyle="#ffd36b";
-
-        ctx.arc(
-            q.x,
-            q.y,
-            4,
-            0,
-            Math.PI*2
-        );
-
-        ctx.fill();
-    }
-
-    ctx.restore();
 }
 
-function drawEnergy(x,y,time){
 
-    const pulse=
-        1+Math.sin(time*.006)*.1;
+/* ENERGY CORE */
 
-    const radius=65*pulse;
+function energyCore(a,b){
 
-    const glow=
-        ctx.createRadialGradient(
-            x,y,0,
-            x,y,radius*2.2
-        );
+  const x=(a.x+b.x)/2;
 
-    glow.addColorStop(
-        0,
-        "rgba(255,255,255,.95)"
-    );
+  const y=(a.y+b.y)/2;
 
-    glow.addColorStop(
-        .15,
-        "rgba(100,220,255,.9)"
-    );
+  const d=distance(a,b);
 
-    glow.addColorStop(
-        .45,
-        "rgba(40,150,255,.35)"
-    );
+  const radius=Math.max(
+    25,
+    Math.min(130,d*.35)
+  );
 
-    glow.addColorStop(
-        1,
-        "rgba(0,80,255,0)"
-    );
+  /* outer glow */
 
-    ctx.fillStyle=glow;
+  for(let i=0;i<3;i++){
 
     ctx.beginPath();
 
     ctx.arc(
-        x,
-        y,
-        radius*2.2,
-        0,
-        Math.PI*2
+      x,
+      y,
+      radius+i*12,
+      0,
+      Math.PI*2
     );
 
-    ctx.fill();
+    ctx.strokeStyle=
+      `rgba(0,255,255,${.25-i*.06})`;
 
-    const core=
-        ctx.createRadialGradient(
-            x-radius*.2,
-            y-radius*.2,
-            2,
-            x,
-            y,
-            radius
-        );
+    ctx.lineWidth=2;
 
-    core.addColorStop(0,"white");
-    core.addColorStop(.2,"#d9ffff");
-    core.addColorStop(.5,"#5bdcff");
-    core.addColorStop(1,"rgba(0,100,255,0)");
+    ctx.shadowBlur=30;
 
-    ctx.fillStyle=core;
+    ctx.shadowColor="#00ffff";
 
-    ctx.beginPath();
+    ctx.stroke();
 
-    ctx.arc(
-        x,
-        y,
-        radius,
-        0,
-        Math.PI*2
-    );
+  }
 
-    ctx.fill();
+  ctx.shadowBlur=0;
+
+  /* core */
+
+  glowCircle(x,y,radius*1.5);
+
+  /* rings */
+
+  const time=Date.now()/700;
+
+  for(let i=0;i<5;i++){
 
     ctx.save();
 
     ctx.translate(x,y);
 
-    for(let i=0;i<5;i++){
+    ctx.rotate(
+      time*(i%2?-.7:.7)+i
+    );
 
-        ctx.rotate(
-            time*.0005*(i+1)
-        );
+    ctx.strokeStyle=
+      `rgba(0,255,255,${.55-i*.07})`;
 
-        ctx.beginPath();
-
-        ctx.ellipse(
-            0,
-            0,
-            radius*(1.1+i*.15),
-            radius*(.35+i*.05),
-            0,
-            0,
-            Math.PI*2
-        );
-
-        ctx.strokeStyle=
-            `rgba(120,230,255,${.35-i*.05})`;
-
-        ctx.lineWidth=2;
-
-        ctx.shadowBlur=20;
-        ctx.shadowColor="#00d9ff";
-
-        ctx.stroke();
-    }
-
-    ctx.restore();
-
-    for(let i=0;i<22;i++){
-
-        const angle=
-            time*.002+i*.8;
-
-        const r=
-            radius+
-            Math.sin(time*.004+i)*25+
-            15;
-
-        const sx=
-            x+Math.cos(angle)*r;
-
-        const sy=
-            y+Math.sin(angle)*r;
-
-        ctx.beginPath();
-
-        ctx.fillStyle=
-            "rgba(190,245,255,.9)";
-
-        ctx.shadowBlur=15;
-        ctx.shadowColor="#00d9ff";
-
-        ctx.arc(
-            sx,
-            sy,
-            2,
-            0,
-            Math.PI*2
-        );
-
-        ctx.fill();
-    }
-}
-
-function lightning(
-    x1,
-    y1,
-    x2,
-    y2,
-    time
-){
-
-    ctx.save();
+    ctx.lineWidth=2;
 
     ctx.beginPath();
 
-    ctx.moveTo(x1,y1);
-
-    const segments=8;
-
-    for(let i=1;i<=segments;i++){
-
-        const t=i/segments;
-
-        let x=
-            x1+(x2-x1)*t;
-
-        let y=
-            y1+(y2-y1)*t;
-
-        const offset=
-            Math.sin(
-                time*.02+i*7
-            )*8;
-
-        x+=offset;
-        y-=offset;
-
-        ctx.lineTo(x,y);
-    }
-
-    ctx.strokeStyle=
-        "rgba(90,220,255,.8)";
-
-    ctx.lineWidth=1.5;
-
-    ctx.shadowBlur=15;
-    ctx.shadowColor="#00cfff";
+    ctx.ellipse(
+      0,
+      0,
+      radius+i*7,
+      radius*.35+i*4,
+      0,
+      0,
+      Math.PI*2
+    );
 
     ctx.stroke();
 
     ctx.restore();
+
+  }
+
+  /* rays */
+
+  for(let i=0;i<20;i++){
+
+    const angle=
+      Math.PI*2*i/20+time;
+
+    const inner=radius*.8;
+
+    const outer=
+      radius+
+      15+
+      Math.sin(time*3+i)*15;
+
+    ctx.strokeStyle=
+      "rgba(0,220,255,.35)";
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      x+Math.cos(angle)*inner,
+      y+Math.sin(angle)*inner
+    );
+
+    ctx.lineTo(
+      x+Math.cos(angle)*outer,
+      y+Math.sin(angle)*outer
+    );
+
+    ctx.stroke();
+
+  }
+
 }
 
-function loop(time){
 
-    if(
-        !running ||
-        !handLandmarker ||
-        video.readyState<2
-    ){
+/* PARTICLES */
 
-        requestAnimationFrame(loop);
-        return;
-    }
+function drawParticles(){
 
-    if(lastVideoTime!==video.currentTime){
+  for(const p of particles){
 
-        const result=
-            handLandmarker.detectForVideo(
-                video,
-                performance.now()
-            );
+    p.x+=p.vx;
 
-        lastVideoTime=
-            video.currentTime;
+    p.y+=p.vy;
 
-        ctx.clearRect(
-            0,
-            0,
-            window.innerWidth,
-            window.innerHeight
-        );
+    if(p.x<0)p.x=1;
 
-        if(
-            result.landmarks &&
-            result.landmarks.length
-        ){
+    if(p.x>1)p.x=0;
 
-            statusText.textContent=
-                result.landmarks.length+
-                " HAND DETECTED";
+    if(p.y<0)p.y=1;
 
-            for(
-                const hand
-                of result.landmarks
-            ){
+    if(p.y>1)p.y=0;
 
-                drawHand(hand);
+    const x=p.x*canvas.width;
 
-                const wrist=
-                    point(hand[0]);
+    const y=p.y*canvas.height;
 
-                const index=
-                    point(hand[5]);
+    ctx.fillStyle=
+      "rgba(0,220,255,.4)";
 
-                const pinky=
-                    point(hand[17]);
+    ctx.beginPath();
 
-                const palmX=
-                    (
-                        wrist.x+
-                        index.x+
-                        pinky.x
-                    )/3;
+    ctx.arc(
+      x,
+      y,
+      p.size,
+      0,
+      Math.PI*2
+    );
 
-                const palmY=
-                    (
-                        wrist.y+
-                        index.y+
-                        pinky.y
-                    )/3;
+    ctx.fill();
 
-                const energyX=
-                    palmX;
+  }
 
-                const energyY=
-                    palmY-70;
-
-                drawEnergy(
-                    energyX,
-                    energyY,
-                    time
-                );
-
-                for(
-                    const id
-                    of [4,8,12,16,20]
-                ){
-
-                    const finger=
-                        point(hand[id]);
-
-                    lightning(
-                        energyX,
-                        energyY,
-                        finger.x,
-                        finger.y,
-                        time
-                    );
-                }
-            }
-
-        }else{
-
-            statusText.textContent=
-                "SHOW YOUR HAND";
-        }
-    }
-
-    requestAnimationFrame(loop);
 }
 
-setup();
+
+/* MAIN LOOP */
+
+async function animate(){
+
+  requestAnimationFrame(animate);
+
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  drawParticles();
+
+  if(
+    handLandmarker &&
+    video.readyState>=2 &&
+    video.currentTime!==lastVideoTime
+  ){
+
+    lastVideoTime=video.currentTime;
+
+    const result=
+      handLandmarker.detectForVideo(
+        video,
+        performance.now()
+      );
+
+    hands=result.landmarks||[];
+
+    for(const hand of hands){
+
+      drawHand(hand);
+
+    }
+
+    if(hands.length===2){
+
+      const h1=hands[0];
+
+      const h2=hands[1];
+
+      const palm1=point(h1,9);
+
+      const palm2=point(h2,9);
+
+      beam(palm1,palm2);
+
+      energyCore(
+        palm1,
+        palm2
+      );
+
+      status.textContent=
+        "TWO HANDS // ENERGY ACTIVE";
+
+    }else if(hands.length===1){
+
+      status.textContent=
+        "HAND DETECTED";
+
+      const palm=point(
+        hands[0],
+        9
+      );
+
+      glowCircle(
+        palm.x,
+        palm.y,
+        55
+      );
+
+    }else{
+
+      status.textContent=
+        "SEARCHING HAND...";
+
+    }
+
+  }
+
+}
 
 </script>
 
